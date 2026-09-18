@@ -12,6 +12,7 @@ android {
         checkReleaseBuilds = false
         abortOnError = false
     }
+
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
@@ -24,18 +25,22 @@ android {
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    val isFdroid = project.hasProperty("fdroid") || 
-                   project.hasProperty("no_updater") || 
-                   System.getenv("FDROID") == "true" || 
-                   System.getenv("NO_UPDATER") == "true"
+    // ============================================================
+    // ОБНОВЛЕНИЯ ОТКЛЮЧЕНЫ
+    // ============================================================
+    // Приложение больше не проверяет наличие новой версии
+    // и не предлагает установить официальное обновление.
+    //
+    // ВАЖНО:
+    // UPDATER_ENABLED = false НЕ удаляет и НЕ изменяет
+    // твой умный поиск или пользовательские настройки.
+    // ============================================================
 
-    if (isFdroid) {
-        logger.lifecycle("BUILD CONFIGURATION: F-Droid mode (Updater disabled)")
-    } else {
-        logger.lifecycle("BUILD CONFIGURATION: Standard mode (Updater enabled)")
-    }
+    val isUpdaterEnabled = false
 
-    buildConfigField("boolean", "UPDATER_ENABLED", (!isFdroid).toString())
+    logger.lifecycle("BUILD CONFIGURATION: Updater disabled")
+
+    buildConfigField("boolean", "UPDATER_ENABLED", "false")
   }
 
   signingConfigs {
@@ -54,6 +59,7 @@ android {
         keyPassword = "android"
       }
     }
+
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
       storePassword = "android"
@@ -67,24 +73,35 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       isShrinkResources = false
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro"
+      )
       signingConfig = signingConfigs.getByName("release")
     }
+
     debug {
       signingConfig = signingConfigs.getByName("debugConfig")
       isMinifyEnabled = false
       isShrinkResources = false
     }
   }
+
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
+
   buildFeatures {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+    }
+  }
 }
 
 secrets {
@@ -94,15 +111,19 @@ secrets {
 
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
-  // ⚠️ УДАЛИТЕ ЭТУ СТРОКУ:
+
+  // Firebase отключён
   // implementation(platform(libs.firebase.bom))
-  
+
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
+
+  // Камера отключена
   // implementation(libs.androidx.camera.camera2)
   // implementation(libs.androidx.camera.core)
   // implementation(libs.androidx.camera.lifecycle)
   // implementation(libs.androidx.camera.view)
+
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
@@ -111,29 +132,41 @@ dependencies {
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.tvprovider)
+
+  // DataStore отключён
   // implementation(libs.androidx.datastore.preferences)
+
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
+
   implementation(libs.androidx.media3.exoplayer)
   implementation(libs.androidx.media3.ui)
   implementation(libs.androidx.media3.exoplayer.hls)
+
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
+
   implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
-  // implementation(libs.firebase.ai) // Firebase AI - закомментирован
+
+  // Firebase AI отключён
+  // implementation(libs.firebase.ai)
+
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
-  // implementation(libs.play.services.location) // Google Play Services - закомментирован
+
+  // Google Play Services Location отключён
+  // implementation(libs.play.services.location)
+
   implementation(libs.retrofit)
   implementation(libs.koin.android)
   implementation(libs.koin.androidx.compose)
-  
+
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
@@ -143,16 +176,30 @@ dependencies {
   testImplementation(libs.roborazzi)
   testImplementation(libs.roborazzi.compose)
   testImplementation(libs.roborazzi.junit.rule)
-  
+
   androidTestImplementation(platform(libs.androidx.compose.bom))
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.runner)
-  
+
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
-  
+
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
+После вставки больше в этом файле ничего менять не надо.
+
+Ключевое изменение только это:
+
+val isUpdaterEnabled = false
+
+logger.lifecycle("BUILD CONFIGURATION: Updater disabled")
+
+buildConfigField("boolean", "UPDATER_ENABLED", "false")
+
+Но есть один важный момент: этого достаточно только если все места, которые показывают обновление, действительно используют "BuildConfig.UPDATER_ENABLED", как мы видели в твоём проекте. Поэтому после сборки я бы обязательно проверил APK: чтобы приложение не только не проверяло GitHub, но и нигде не показывало предложение обновиться.
+
+Если после этого GitHub Actions выдаст ошибку — не меняй ничего наугад, просто пришли мне ошибку сборки, и я дам точечное исправление.
